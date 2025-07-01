@@ -29,6 +29,8 @@ public:
 	virtual AVFrame* getNextAudioFrame() = 0;
 	QImage frameToImage(AVFrame* frame);
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
+	virtual const AVCodecParameters* getVideoFormat() { return nullptr; }
+	virtual const AVCodecParameters* getAudioFormat() { return nullptr; }
 
 	virtual void seek(int s) = 0;
 

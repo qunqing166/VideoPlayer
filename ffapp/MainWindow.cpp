@@ -2,6 +2,9 @@
 #include "PlayerWidget.h"
 #include "spdlog/spdlog.h"
 #include "ProgressBar.h"
+#include <QStringListModel>
+#include <QFileInfo>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -10,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     PlayController* controller = new PlayController();
     controller->start();
-    controller->setSource("C:\\Users\\qunqing\\Desktop\\v1.mp4");
+    //controller->setSource("C:\\Users\\qunqing\\Desktop\\v1.mp4");
     PlayerWidget* widget = new PlayerWidget(controller, this);
     ui.horizontalLayout_2->addWidget(widget);
 
@@ -18,6 +21,24 @@ MainWindow::MainWindow(QWidget *parent)
     progressBar->setRange(10000);
 
     ui.widget->layout()->addWidget(progressBar);
+
+    ui.listView->setModel(new QStringListModel());
+
+    insertVideoItem("C:\\Users\\qunqing\\Desktop\\v1.mp4");
+
+    connect(ui.listView, &QListView::clicked, this, [=](const QModelIndex& index) {
+        std::string name = ui.listView->model()->data(index).toString().toStdString();
+        controller->setSource(QString(_nameToPath[name].c_str()));
+        });
+
+    connect(ui.pushButton_4, &QPushButton::clicked, this, [&]() {
+        auto files = QFileDialog::getOpenFileNames(this, QString(), QString(),  "Medias (*.mp4 *.mp3);");
+        for (auto file : files)
+        {
+            this->insertVideoItem(file.toStdString());
+        }
+        });
+
     
     connect(ui.pushButton_2, &QPushButton::clicked, this, [=]() {
         static bool status = false;
@@ -43,4 +64,14 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {}
+
+void MainWindow::insertVideoItem(const std::string & url)
+{
+    QFileInfo info(url.c_str());
+    _nameToPath.insert(std::pair(info.fileName().toStdString(), url));
+
+    ui.listView->model()->insertRow(0);
+    ui.listView->model()->setData(ui.listView->model()->index(0, 0), info.fileName());
+    spdlog::info("insert new video item, url: {}, filename: {}", url, info.fileName().toStdString());
+}
 

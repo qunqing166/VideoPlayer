@@ -21,15 +21,13 @@ PlayController::PlayController(QObject* parent):
 	QObject(parent)
 {
     _decode = new MP4Decoder();
-    _audioFormat.setSampleRate(44100);
+    _decode->start();
+
     _audioFormat.setChannelCount(1);
     _audioFormat.setSampleFormat(QAudioFormat::Float);
-    _audioSink = new QAudioSink(_audioFormat, this);
 
-    _threadAudio = std::make_unique<std::thread*>(new std::thread(&PlayController::threadAudio, this));
-    _threadVideo = std::make_unique<std::thread*>(new std::thread(&PlayController::threadVideo, this));
-
-    spdlog::info("PlayController creaed ok");
+    _threadAudio.reset(new std::thread(&PlayController::threadAudio, this));
+    _threadVideo.reset(new std::thread(&PlayController::threadVideo, this));
 }
 
 PlayController::~PlayController()
@@ -41,8 +39,14 @@ bool PlayController::setSource(const QString& url)
 {
     if (_sourceUrl != url)
     {
+        _state = pause;
         this->_sourceUrl = url;
         _decode->setSource(_sourceUrl.toStdString());
+        auto audioInfo = _decode->getAudioFormat();
+        _audioFormat.setSampleRate(audioInfo->sample_rate);
+        this->setAudioFormat(_audioFormat);
+        _audioIO = _audioSink->start();
+        _state = running;
         return true;
     }
     return false;
@@ -50,10 +54,7 @@ bool PlayController::setSource(const QString& url)
 
 void PlayController::start()
 {
-    _audioIO = _audioSink->start();
 
-    _decode->start();
-    this->setState(running);
 }
 
 void PlayController::restart()
@@ -91,6 +92,11 @@ void PlayController::setState(PlayController::State state)
         break;
     }
     spdlog::info("play state changed: {}", state == running ? "running" : "pause");
+}
+
+void PlayController::setAudioFormat(const QAudioFormat& format)
+{
+    _audioSink.reset(new QAudioSink(format, this));
 }
 
 void PlayController::threadAudio()
@@ -172,7 +178,20 @@ void PlayController::threadVideo()
 {
     for (;;)
     {
-        if (_state == State::pause)continue;
+        switch (_state)
+        {
+        case PlayController::none:
+            continue;
+        case PlayController::running:
+            break;
+        case PlayController::pause:
+            continue;
+        case PlayController::stop:
+            continue;
+        default:
+            continue;
+        }
+
         AVFrame* frame = _decode->getNextVideoFrame();
         if (frame == nullptr)continue;
 

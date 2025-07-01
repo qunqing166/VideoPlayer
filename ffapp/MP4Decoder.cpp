@@ -251,6 +251,16 @@ void MP4Decoder::seek(int s)
     _state = ready;
 }
 
+const AVCodecParameters* MP4Decoder::getVideoFormat()
+{
+    return _formatContext->streams[_videoStreamIndex]->codecpar;
+}
+
+const AVCodecParameters* MP4Decoder::getAudioFormat()
+{
+    return _formatContext->streams[_audioStreamIndex]->codecpar;
+}
+
 void MP4Decoder::clearFrames()
 {
     {

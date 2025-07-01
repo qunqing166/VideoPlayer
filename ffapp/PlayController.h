@@ -39,21 +39,23 @@ public:
 
 private:
 
+	void setAudioFormat(const QAudioFormat& format);
+
 	void threadAudio();
 	void threadVideo();
 
 	MediaDecoder* _decode;
-	State _state;
+	State _state = none;
 
 	QString _sourceUrl;
 	
 	QAudioFormat _audioFormat;
-	QAudioSink* _audioSink = nullptr;
+	std::unique_ptr<QAudioSink> _audioSink;
 	QIODevice* _audioIO = nullptr;
 
 	
-	std::unique_ptr<std::thread*> _threadAudio;
-	std::unique_ptr<std::thread*> _threadVideo;
+	std::unique_ptr<std::thread> _threadAudio;
+	std::unique_ptr<std::thread> _threadVideo;
 
 	bool isAudioReady = false;
 	int _timeStamp = 0;

@@ -23,6 +23,9 @@ public:
 
 	void seek(int s) override;
 
+	const AVCodecParameters* getVideoFormat() override;
+	const AVCodecParameters* getAudioFormat() override;
+
 protected:
 	void initSource() override;
 	void releaseSource() override;

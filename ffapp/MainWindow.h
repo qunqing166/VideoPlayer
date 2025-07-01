@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
+#include <map>
 
 class MainWindow : public QMainWindow
 {
@@ -12,6 +13,11 @@ public:
     ~MainWindow();
 
 private:
+
+    void insertVideoItem(const std::string& url);
+
     Ui::MainWindowClass ui;
+
+    std::map<std::string, std::string> _nameToPath;
 };
 
