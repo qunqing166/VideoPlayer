@@ -12,7 +12,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui.setupUi(this);
 
     PlayController* controller = new PlayController();
-    controller->start();
     //controller->setSource("C:\\Users\\qunqing\\Desktop\\v1.mp4");
     PlayerWidget* widget = new PlayerWidget(controller, this);
     ui.horizontalLayout_2->addWidget(widget);

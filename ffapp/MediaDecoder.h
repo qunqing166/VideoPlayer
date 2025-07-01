@@ -31,8 +31,9 @@ public:
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
 	virtual const AVCodecParameters* getVideoFormat() { return nullptr; }
 	virtual const AVCodecParameters* getAudioFormat() { return nullptr; }
+	virtual uint64_t getTimeStamp(uint64_t pts) { return -1; }
 
-	virtual void seek(int s) = 0;
+	virtual void seek(uint64_t ms) = 0;
 
 
 protected:

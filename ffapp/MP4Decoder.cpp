@@ -29,6 +29,9 @@ void MP4Decoder::initSource()
     RunningTime("Decoder init source");
     _formatContext = avformat_alloc_context();
 
+
+    avformat_close_input(&_formatContext);
+
     if (avformat_open_input(&_formatContext, url.c_str(), NULL, NULL) != 0)
     {
         spdlog::error("avformat_open_input(&_formatContext, url.c_str(), NULL, NULL) != 0");
@@ -105,6 +108,7 @@ void MP4Decoder::initSource()
         SWS_BICUBIC, NULL, NULL, NULL
     );
 
+
     spdlog::info("video timebase: {0}/{1}",
         _formatContext->streams[_videoStreamIndex]->time_base.num,
         _formatContext->streams[_videoStreamIndex]->time_base.den);
@@ -113,7 +117,16 @@ void MP4Decoder::initSource()
         _formatContext->streams[_audioStreamIndex]->time_base.den);
     spdlog::info("编码格式: {}", codec->name);
     spdlog::info("采样率: {} Hz", codecpar->sample_rate);
+    spdlog::info("layout: {}", codecpar->ch_layout.nb_channels);
+    spdlog::info("Bit Depth: {} bits", av_get_bits_per_sample(codecpar->codec_id));
     spdlog::info("采样格式: {}", av_get_sample_fmt_name((AVSampleFormat)codecpar->format));
+    const char* format_name = av_get_sample_fmt_name((AVSampleFormat)codecpar->format);
+    if (format_name) {
+        spdlog::info("Sample Format: {}\n", format_name);
+    }
+    else {
+        spdlog::info("Sample Format: Unknown\n");
+    }
     if (codecpar->block_align > 0) {
         spdlog::info("frame size: {} byte", codecpar->block_align);
     }
@@ -242,11 +255,13 @@ double MP4Decoder::getTimeBase()
     return _formatContext->streams[_videoStreamIndex]->time_base.num * 1.0 / _formatContext->streams[_videoStreamIndex]->time_base.den;
 }
 
-void MP4Decoder::seek(int s)
+void MP4Decoder::seek(uint64_t ms)
 {
     _state = wait;
-    int ts = s * 16;
-    av_seek_frame(_formatContext, _videoStreamIndex, ts, AVSEEK_FLAG_BACKWARD);
+    //int ts = s * 16;
+    uint64_t ts = ms * _formatContext->streams[_audioStreamIndex]->time_base.den / 1000;
+    spdlog::info("ts: {}", ts);
+    av_seek_frame(_formatContext, _audioStreamIndex, ts, AVSEEK_FLAG_BACKWARD);
     this->clearFrames();
     _state = ready;
 }
@@ -259,6 +274,13 @@ const AVCodecParameters* MP4Decoder::getVideoFormat()
 const AVCodecParameters* MP4Decoder::getAudioFormat()
 {
     return _formatContext->streams[_audioStreamIndex]->codecpar;
+}
+
+uint64_t MP4Decoder::getTimeStamp(uint64_t pts)
+{
+    // (pts * 1 / den) s
+    return pts * 1000 / _formatContext->streams[_audioStreamIndex]->time_base.den;
+    // return s * 1000 (ms)
 }
 
 void MP4Decoder::clearFrames()

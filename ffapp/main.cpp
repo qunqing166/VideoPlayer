@@ -13,8 +13,6 @@ extern "C" {
 #include "PlayController.h"
 #include "spdlog/spdlog.h"
 
-
-
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -23,4 +21,5 @@ int main(int argc, char *argv[])
     w.show();
 
     app.exec();
+    return 0;
 }

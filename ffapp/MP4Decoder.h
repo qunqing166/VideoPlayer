@@ -21,10 +21,11 @@ public:
 	void setSource(const QString& file);
 	double getTimeBase();
 
-	void seek(int s) override;
+	void seek(uint64_t ms) override;
 
 	const AVCodecParameters* getVideoFormat() override;
 	const AVCodecParameters* getAudioFormat() override;
+	uint64_t getTimeStamp(uint64_t pts) override;
 
 protected:
 	void initSource() override;

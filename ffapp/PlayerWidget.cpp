@@ -13,16 +13,6 @@ PlayerWidget::PlayerWidget(PlayController* controller, QWidget* parent):
         this->update();
         }, Qt::QueuedConnection);
 
-    QPushButton* btn1 = new QPushButton("start", this);
-    QPushButton* btn2 = new QPushButton("stop", this);
-    QPushButton* btn3 = new QPushButton("resatrt", this);
-
-    btn1->move(0, 0);
-    btn2->move(0, 40);
-    btn3->move(0, 80);
-    connect(btn2, &QPushButton::clicked, this, [&]() {_controller->setState(PlayController::pause); });
-    connect(btn1, &QPushButton::clicked, this, [&]() {_controller->setState(PlayController::running); });
-    connect(btn3, &QPushButton::clicked, this, [&]() {_controller->restart(); });
     this->resize(1000, 800);
 }
 

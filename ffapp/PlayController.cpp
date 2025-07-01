@@ -16,61 +16,61 @@ extern "C" {
 
 #include "RunningTime.h"
 #include "spdlog/spdlog.h"
+#include "SDL2/SDL.h"
 
 PlayController::PlayController(QObject* parent):
 	QObject(parent)
 {
-    _decode = new MP4Decoder();
+    SDL_Init(SDL_INIT_AUDIO);
+
+    _decode.reset(new MP4Decoder());
     _decode->start();
 
-    _audioFormat.setChannelCount(1);
-    _audioFormat.setSampleFormat(QAudioFormat::Float);
+    _wantedSpec.format = AUDIO_F32SYS;
+    _wantedSpec.channels = 2;
+    _wantedSpec.samples = 1024;
+    _wantedSpec.userdata = this;
+    _wantedSpec.callback = PlayController::SDLAudioCallback;
 
-    _threadAudio.reset(new std::thread(&PlayController::threadAudio, this));
     _threadVideo.reset(new std::thread(&PlayController::threadVideo, this));
 }
 
 PlayController::~PlayController()
 {
-    delete _decode;
+
 }
 
 bool PlayController::setSource(const QString& url)
 {
     if (_sourceUrl != url)
     {
-        _state = pause;
+        setState(pause);
         this->_sourceUrl = url;
         _decode->setSource(_sourceUrl.toStdString());
         auto audioInfo = _decode->getAudioFormat();
-        _audioFormat.setSampleRate(audioInfo->sample_rate);
-        this->setAudioFormat(_audioFormat);
-        _audioIO = _audioSink->start();
-        _state = running;
+        _wantedSpec.channels = audioInfo->ch_layout.nb_channels;
+        _wantedSpec.freq = audioInfo->sample_rate / audioInfo->ch_layout.nb_channels;
+
+        SDL_CloseAudio();
+        if (SDL_OpenAudio(&_wantedSpec, &_obtainedSpec) < 0)
+        {
+            spdlog::error("SDL_OpenAudio(&_wantedSpec, &_obtainedSpec)");
+        }
+        else
+        {
+            spdlog::info("SDL_OpenAudio OK");
+        }
+        SDL_PauseAudio(0);
+        setState(running);
         return true;
     }
     return false;
 }
 
-void PlayController::start()
-{
-
-}
-
-void PlayController::restart()
-{
-    RunningTime t("restart");
-    this->setState(pause);
-    _decode->seek(0);
-    _timeStamp = 0;
-    Sleep(100);
-    this->setState(running);
-}
-
 void PlayController::seek(double position)
 {
-    int msc = _decode->getFormatContext()->duration * position / 1000 ;
-    _decode->seek(msc);
+    uint64_t sc = _decode->getFormatContext()->duration * position / 1000;
+    _decode->seek(sc);
 }
 
 void PlayController::setState(PlayController::State state)
@@ -81,10 +81,11 @@ void PlayController::setState(PlayController::State state)
     case PlayController::none:
         break;
     case PlayController::running:
-        _audioSink->start();
+        //_audioSink->start();
+        SDL_PauseAudio(0);
         break;
     case PlayController::pause:
-        _audioSink->stop();
+        SDL_PauseAudio(1);
         break;
     case PlayController::stop:
         break;
@@ -94,83 +95,50 @@ void PlayController::setState(PlayController::State state)
     spdlog::info("play state changed: {}", state == running ? "running" : "pause");
 }
 
-void PlayController::setAudioFormat(const QAudioFormat& format)
+void PlayController::SDLAudioCallback(void* arg, Uint8* stream, int len)
 {
-    _audioSink.reset(new QAudioSink(format, this));
-}
-
-void PlayController::threadAudio()
-{
-	for (;;)
-	{
-        switch (_state)
+    PlayController* obj = (PlayController*)arg;
+    SDL_memset(stream, 0, len);
+    static int remaining = 0;
+    static char* buffer = nullptr;
+    while (len > 0)
+    {
+        if (remaining <= len)
         {
-        case PlayController::none:
-            continue;
-        case PlayController::running:
-            break;
-        case PlayController::pause:
-            continue;
-        case PlayController::stop:
-            continue;
-        default:
-            continue;
-        }
-
-        AVFrame* frame = _decode->getNextAudioFrame();
-        if (frame == nullptr)continue;
-
-        int size = av_samples_get_buffer_size(
-                        nullptr,
-                        1,
-                        frame->nb_samples,
-                        AV_SAMPLE_FMT_FLTP,
-                        1
-                   );
-
-        static int pre = -1;
-        _timeStamp = frame->pts * 1000 / 44100;
-        if (pre != _timeStamp)
-        {
-            pre = _timeStamp;
-            emit ptsChanged(_timeStamp * 1000.0 / _decode->getFormatContext()->duration);
-        }
-
-        char* data = (char*)frame->data[0];
-        int index = 0;
-        while (1)
-        {
-            int free = _audioSink->bytesFree();
-            if (free > 0)
+            if (buffer != nullptr && remaining > 0)
             {
-                int flag = 0;
-                int len = size - index;
-                if (len > free)
-                {
-                    len = free;
-                }
-                else
-                {
-                    flag = 1;
-                }
-
-                bool isReady = false;   // 比条件变量好用[bushi]
-
-                QMetaObject::invokeMethod(this, [&]() {
-                    _audioIO->write(data, len);
-                    isReady = true;
-                    }, Qt::QueuedConnection);
-                emit audioWrite(data, len);
-
-                while (isReady == false);
-
-                data += len;
-                index += len;
-                if (flag == 1)break;
+                memcpy(stream, buffer, remaining);
+                stream += remaining;
+                len -= remaining;
+                remaining = 0;
+            }
+            AVFrame* frame = obj->_decode->getNextAudioFrame();
+            if (frame == nullptr)continue;
+            remaining = av_samples_get_buffer_size(
+                nullptr,
+                1,
+                frame->nb_samples,
+                AV_SAMPLE_FMT_FLTP,
+                1
+            );
+            obj->_timeStamp = obj->_decode->getTimeStamp(frame->pts);
+            emit obj->ptsChanged(obj->_timeStamp * 1000.0 / obj->_decode->getFormatContext()->duration);
+            buffer = (char*)frame->data[0];
+        }
+        else
+        {
+            if (buffer != nullptr)
+            {
+                memcpy(stream, buffer, len);
+                buffer += len;
+                remaining -= len;
+                len = 0;
+            }
+            else
+            {
+                spdlog::warn("PlayController::SDLAudioCallback: buffer is nullptr");
             }
         }
-
-        av_frame_free(&frame);
     }
 }
 
