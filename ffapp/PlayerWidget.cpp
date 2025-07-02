@@ -39,12 +39,12 @@ void PlayerWidget::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHints(QPainter::SmoothPixmapTransform | QPainter::Antialiasing, true);
     if (!m_currentFrame.isNull()) {
-        m_currentFrame = m_currentFrame.scaled(this->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.drawImage(rect().topLeft() + QPoint((this->width() - m_currentFrame.width()) / 2, (this->height() - m_currentFrame.height()) / 2), m_currentFrame);
+        QImage&& tmp = m_currentFrame.scaled(this->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.drawImage(rect().topLeft() + QPoint((this->width() - tmp.width()) / 2, (this->height() - tmp.height()) / 2), tmp);
     }
 }
 
 void PlayerWidget::resizeEvent(QResizeEvent* event)
 {
-    //m_decoder.updateDstSize(this->size());
+
 }

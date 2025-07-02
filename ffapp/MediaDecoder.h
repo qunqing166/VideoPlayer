@@ -34,6 +34,7 @@ public:
 	virtual uint64_t getTimeStamp(uint64_t pts) { return -1; }
 
 	virtual void seek(uint64_t ms) = 0;
+	virtual void printfMediaInfo() {};
 
 
 protected:

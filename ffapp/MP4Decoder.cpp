@@ -27,10 +27,12 @@ void MP4Decoder::setSource(const QString& file)
 void MP4Decoder::initSource()
 {
     RunningTime("Decoder init source");
-    _formatContext = avformat_alloc_context();
 
-
+    _state = wait;
+    this->clearFrames();
     avformat_close_input(&_formatContext);
+    _formatContext = avformat_alloc_context();
+    
 
     if (avformat_open_input(&_formatContext, url.c_str(), NULL, NULL) != 0)
     {
@@ -62,81 +64,73 @@ void MP4Decoder::initSource()
 
     if (_videoStreamIndex == -1)
     {
-        spdlog::error("can not find video stream");
-        system("pause");
+        //spdlog::error("can not find video stream");
+        //system("pause");
     }
 
-    AVCodecParameters* codecpar = _formatContext->streams[_videoStreamIndex]->codecpar;
-    const AVCodec* codec = avcodec_find_decoder(codecpar->codec_id);
-    _codecVideo = avcodec_alloc_context3(codec);
-    avcodec_parameters_to_context(_codecVideo, codecpar);
+    AVCodecParameters* codecpar;
+    const AVCodec* codec;
 
-    if (codec == nullptr)
+    if (_videoStreamIndex != -1)
     {
-        spdlog::error("find video decoder error");
-        system("pause");
+        codecpar = _formatContext->streams[_videoStreamIndex]->codecpar;
+        codec = avcodec_find_decoder(codecpar->codec_id);
+        _codecVideo = avcodec_alloc_context3(codec);
+        avcodec_parameters_to_context(_codecVideo, codecpar);
+
+        if (codec == nullptr)
+        {
+            spdlog::error("find video decoder error");
+            system("pause");
+        }
+
+        if (avcodec_open2(_codecVideo, codec, NULL) < 0)
+        {
+            spdlog::error("video avcodec_open2 error");
+            system("pause");
+        }
     }
 
-    if (avcodec_open2(_codecVideo, codec, NULL) < 0)
+    if (_audioStreamIndex != -1)
     {
-        spdlog::error("video avcodec_open2 error");
-        system("pause");
+        codecpar = _formatContext->streams[_audioStreamIndex]->codecpar;
+        codec = avcodec_find_decoder(codecpar->codec_id);
+        _codecAudio = avcodec_alloc_context3(codec);
+        avcodec_parameters_to_context(_codecAudio, codecpar);
+
+        if (codec == nullptr)
+        {
+            spdlog::error("find audio decoder error");
+            system("pause");
+        }
+
+        if (avcodec_open2(_codecAudio, codec, NULL) < 0)
+        {
+            spdlog::error("audio avcodec_open2 error");
+            system("pause");
+        }
     }
 
-    codecpar = _formatContext->streams[_audioStreamIndex]->codecpar;
-    codec = avcodec_find_decoder(codecpar->codec_id);
-    _codecAudio = avcodec_alloc_context3(codec);
-    avcodec_parameters_to_context(_codecAudio, codecpar);
-
-    if (codec == nullptr)
+    if (_videoStreamIndex != -1)
     {
-        spdlog::error("find audio decoder error");
-        system("pause");
-    }
+        SwsContext* swsContext = sws_getContext(
+            _codecVideo->width, _codecVideo->height, _codecVideo->pix_fmt,
+            _codecVideo->width, _codecVideo->height, AV_PIX_FMT_YUV420P,
+            SWS_BICUBIC, NULL, NULL, NULL
+        );
 
-    if (avcodec_open2(_codecAudio, codec, NULL) < 0)
+        if (_buffer != nullptr)delete[] _buffer;
+        _buffer = new uchar[_codecVideo->width * _codecVideo->height * 3];
+    }
+    else
     {
-        spdlog::error("audio avcodec_open2 error");
-        system("pause");
+        if (_buffer != nullptr)delete[] _buffer;
+        _buffer = nullptr;
     }
 
-    //qDebug() << _formatContext->streams[_videoStreamIndex]->time_base.den << " " << _formatContext->streams[_videoStreamIndex]->time_base.num;
-    
-    SwsContext* swsContext = sws_getContext(
-        _codecVideo->width, _codecVideo->height, _codecVideo->pix_fmt,
-        _codecVideo->width, _codecVideo->height, AV_PIX_FMT_YUV420P,
-        SWS_BICUBIC, NULL, NULL, NULL
-    );
+    this->printfMediaInfo();
 
 
-    spdlog::info("video timebase: {0}/{1}",
-        _formatContext->streams[_videoStreamIndex]->time_base.num,
-        _formatContext->streams[_videoStreamIndex]->time_base.den);
-    spdlog::info("audio timebase: {0}/{1}",
-        _formatContext->streams[_audioStreamIndex]->time_base.num,
-        _formatContext->streams[_audioStreamIndex]->time_base.den);
-    spdlog::info("编码格式: {}", codec->name);
-    spdlog::info("采样率: {} Hz", codecpar->sample_rate);
-    spdlog::info("layout: {}", codecpar->ch_layout.nb_channels);
-    spdlog::info("Bit Depth: {} bits", av_get_bits_per_sample(codecpar->codec_id));
-    spdlog::info("采样格式: {}", av_get_sample_fmt_name((AVSampleFormat)codecpar->format));
-    const char* format_name = av_get_sample_fmt_name((AVSampleFormat)codecpar->format);
-    if (format_name) {
-        spdlog::info("Sample Format: {}\n", format_name);
-    }
-    else {
-        spdlog::info("Sample Format: Unknown\n");
-    }
-    if (codecpar->block_align > 0) {
-        spdlog::info("frame size: {} byte", codecpar->block_align);
-    }
-    spdlog::info("视频文件格式: {}", _formatContext->iformat->name);
-    spdlog::info("视频时间长: {}", _formatContext->duration);
-    spdlog::info("视频宽高: {}, {}", _codecVideo->width, _codecVideo->height);
-    spdlog::info("解码器名称: {}", codec->name);
-
-    if (_buffer != nullptr)delete[] _buffer;
-    _buffer = new uchar[_codecVideo->width * _codecVideo->height * 3];
     _state = State::ready;
 }
 
@@ -258,7 +252,6 @@ double MP4Decoder::getTimeBase()
 void MP4Decoder::seek(uint64_t ms)
 {
     _state = wait;
-    //int ts = s * 16;
     uint64_t ts = ms * _formatContext->streams[_audioStreamIndex]->time_base.den / 1000;
     spdlog::info("ts: {}", ts);
     av_seek_frame(_formatContext, _audioStreamIndex, ts, AVSEEK_FLAG_BACKWARD);
@@ -278,9 +271,48 @@ const AVCodecParameters* MP4Decoder::getAudioFormat()
 
 uint64_t MP4Decoder::getTimeStamp(uint64_t pts)
 {
-    // (pts * 1 / den) s
     return pts * 1000 / _formatContext->streams[_audioStreamIndex]->time_base.den;
-    // return s * 1000 (ms)
+}
+
+void MP4Decoder::printfMediaInfo()
+{
+    AVCodecParameters* codecpar;
+    const AVCodec* codec;
+
+    if (_videoStreamIndex != -1)
+    {
+        codecpar = _formatContext->streams[_videoStreamIndex]->codecpar;
+        codec = avcodec_find_decoder(codecpar->codec_id);
+
+        spdlog::info("video timebase: {0}/{1}",
+            _formatContext->streams[_videoStreamIndex]->time_base.num,
+            _formatContext->streams[_videoStreamIndex]->time_base.den);
+        spdlog::info("视频文件格式: {}", _formatContext->iformat->name);
+        spdlog::info("视频时间长: {}", _formatContext->duration);
+        spdlog::info("视频宽高: {}, {}", _codecVideo->width, _codecVideo->height);
+        spdlog::info("解码器名称: {}", codec->name);
+    }
+
+    if (_audioStreamIndex != -1)
+    {
+        codecpar = _formatContext->streams[_audioStreamIndex]->codecpar;
+        codec = avcodec_find_decoder(codecpar->codec_id);
+
+        spdlog::info("audio timebase: {0}/{1}",
+            _formatContext->streams[_audioStreamIndex]->time_base.num,
+            _formatContext->streams[_audioStreamIndex]->time_base.den);
+
+        spdlog::info("编码格式: {}", codec->name);
+        spdlog::info("采样率: {} Hz", codecpar->sample_rate);
+        spdlog::info("channels: {}", codecpar->ch_layout.nb_channels);
+        //spdlog::info("Bit Depth: {} bits", av_get_bits_per_sample(codecpar->codec_id));
+        spdlog::info("采样格式: {}", av_get_sample_fmt_name((AVSampleFormat)codecpar->format));
+        const char* format_name = av_get_sample_fmt_name((AVSampleFormat)codecpar->format);
+        if (format_name) spdlog::info("Sample Format: {}\n", format_name);
+        //if (codecpar->block_align > 0) spdlog::info("frame size: {} byte", codecpar->block_align);
+    }
+
+
 }
 
 void MP4Decoder::clearFrames()

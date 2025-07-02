@@ -81,7 +81,6 @@ void PlayController::setState(PlayController::State state)
     case PlayController::idle:
         break;
     case PlayController::running:
-        //_audioSink->start();
         SDL_PauseAudio(0);
         break;
     case PlayController::pause:
@@ -163,7 +162,9 @@ void PlayController::threadVideo()
         AVFrame* frame = _decode->getNextVideoFrame();
         if (frame == nullptr)continue;
 
-        long long waitTime = frame->pts * 1000 / 16000 - _timeStamp;
+        int64_t waitTime;
+        if (frame->pts == INT64_MIN)waitTime = 1;
+        else waitTime = frame->pts * 1000 / 16000 - _timeStamp;
 
         if (waitTime > 1000)
         {

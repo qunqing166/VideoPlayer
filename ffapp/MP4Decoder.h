@@ -26,6 +26,7 @@ public:
 	const AVCodecParameters* getVideoFormat() override;
 	const AVCodecParameters* getAudioFormat() override;
 	uint64_t getTimeStamp(uint64_t pts) override;
+	void printfMediaInfo() override;
 
 protected:
 	void initSource() override;
