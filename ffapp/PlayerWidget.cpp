@@ -12,8 +12,10 @@ PlayerWidget::PlayerWidget(PlayController* controller, QWidget* parent):
         m_currentFrame = img;
         this->update();
         }, Qt::QueuedConnection);
-
-    this->resize(1000, 800);
+    connect(controller, &PlayController::sourceChanged, this, [&]() {
+        this->m_currentFrame = QImage();
+        update();
+        });
 }
 
 PlayerWidget::~PlayerWidget()
@@ -31,7 +33,6 @@ void PlayerWidget::setTimeBase(double base)
     qDebug() << "time_base: " << base * 1000;
     timeBase = base * 1000;
     timeBase = 1.0 / 36;
-    //m_timer.setInterval(1);
 }
 
 void PlayerWidget::paintEvent(QPaintEvent* event)

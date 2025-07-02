@@ -59,7 +59,6 @@ MainWindow::MainWindow(QWidget *parent)
         {
             progressBar->setValue(position * 10000 + 1);
         }
-        //*isPts = true;
         }, Qt::QueuedConnection);
     connect(progressBar, &ProgressBar::ValueChanged, this, [=](int value) {
         spdlog::info("progress bar value: {}", value);
@@ -78,6 +77,8 @@ void MainWindow::insertVideoItem(const std::string & url)
     _nameToPath.insert(std::pair(info.fileName().toStdString(), url));
     ui.listView->model()->insertRow(0);
     ui.listView->model()->setData(ui.listView->model()->index(0, 0), info.fileName());
-    spdlog::info("insert new video item, url: {}, filename: {}", url, info.fileName().toStdString());
+    spdlog::info("insert new video item, url: {}, filename: {}", 
+        QString(url.c_str()).toLocal8Bit().toStdString(), 
+        info.fileName().toLocal8Bit().toStdString());
 }
 

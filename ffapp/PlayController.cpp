@@ -44,7 +44,8 @@ bool PlayController::setSource(const QString& url)
 {
     if (_sourceUrl != url)
     {
-        setState(pause);
+        //setState(pause);
+        _state = pause;
         this->_sourceUrl = url;
         _decode->setSource(_sourceUrl.toStdString());
         auto audioInfo = _decode->getAudioFormat();
@@ -62,6 +63,7 @@ bool PlayController::setSource(const QString& url)
         }
         SDL_PauseAudio(0);
         setState(running);
+        emit sourceChanged();
         return true;
     }
     return false;

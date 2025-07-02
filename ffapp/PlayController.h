@@ -54,5 +54,6 @@ signals:
 	void started();
 	void nextVideoFrame(const QImage& image);
 	void ptsChanged(double pts);
+	void sourceChanged();
 };
 

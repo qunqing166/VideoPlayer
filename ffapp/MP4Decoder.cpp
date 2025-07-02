@@ -32,6 +32,8 @@ void MP4Decoder::initSource()
     this->clearFrames();
     avformat_close_input(&_formatContext);
     _formatContext = avformat_alloc_context();
+    _videoStreamIndex = -1;
+    _audioStreamIndex = -1;
     
 
     if (avformat_open_input(&_formatContext, url.c_str(), NULL, NULL) != 0)
@@ -242,6 +244,7 @@ void MP4Decoder::threadDecode()
         }
         av_packet_free(&packet);
     }
+    spdlog::warn("decode thread finished");
 }
 
 double MP4Decoder::getTimeBase()
