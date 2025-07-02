@@ -39,12 +39,12 @@ public:
 protected:
 
 	enum State {
-		none,
+		idle,
 		wait,
 		ready,
 		finished
 	} 
-	_state = none;
+	_state = idle;
 
 	virtual void initSource() = 0;
 	virtual void releaseSource() = 0;

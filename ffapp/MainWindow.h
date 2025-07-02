@@ -3,6 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
 #include <map>
+#include <QSettings>
 
 class MainWindow : public QMainWindow
 {
@@ -19,5 +20,6 @@ private:
     Ui::MainWindowClass ui;
 
     std::map<std::string, std::string> _nameToPath;
+    QSettings settings;
 };
 

@@ -27,7 +27,7 @@ PlayController::PlayController(QObject* parent):
     _decode->start();
 
     _wantedSpec.format = AUDIO_F32SYS;
-    _wantedSpec.channels = 2;
+    //_wantedSpec.channels = 2;
     _wantedSpec.samples = 1024;
     _wantedSpec.userdata = this;
     _wantedSpec.callback = PlayController::SDLAudioCallback;
@@ -78,7 +78,7 @@ void PlayController::setState(PlayController::State state)
     _state = state;
     switch (_state)
     {
-    case PlayController::none:
+    case PlayController::idle:
         break;
     case PlayController::running:
         //_audioSink->start();
@@ -148,7 +148,7 @@ void PlayController::threadVideo()
     {
         switch (_state)
         {
-        case PlayController::none:
+        case PlayController::idle:
             continue;
         case PlayController::running:
             break;

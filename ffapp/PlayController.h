@@ -17,7 +17,7 @@ public:
 
 	enum State
 	{
-		none,
+		idle,
 		running,
 		pause,
 		stop
@@ -39,7 +39,7 @@ private:
 
 	//MediaDecoder* _decode;
 	std::unique_ptr<MediaDecoder> _decode;
-	State _state = none;
+	State _state = idle;
 
 	QString _sourceUrl;
 

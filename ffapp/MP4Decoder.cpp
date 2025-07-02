@@ -197,7 +197,7 @@ void MP4Decoder::threadDecode()
         {
         case MediaDecoder::ready:
             break;
-        case MediaDecoder::none:;
+        case MediaDecoder::idle:;
         case MediaDecoder::finished:;
         default:
             continue;

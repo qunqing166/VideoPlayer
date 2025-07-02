@@ -7,12 +7,11 @@
 #include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), settings("qunqing166", "MediaPlayer")
 {
     ui.setupUi(this);
 
     PlayController* controller = new PlayController();
-    //controller->setSource("C:\\Users\\qunqing\\Desktop\\v1.mp4");
     PlayerWidget* widget = new PlayerWidget(controller, this);
     ui.horizontalLayout_2->addWidget(widget);
 
@@ -23,7 +22,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui.listView->setModel(new QStringListModel());
 
-    insertVideoItem("C:\\Users\\qunqing\\Desktop\\v1.mp4");
+    QList<QVariant> list = settings.value("items").toList();
+    for (auto item : list)
+    {
+        insertVideoItem(item.toString().toStdString());
+    }
 
     connect(ui.listView, &QListView::clicked, this, [=](const QModelIndex& index) {
         std::string name = ui.listView->model()->data(index).toString().toStdString();
@@ -34,6 +37,9 @@ MainWindow::MainWindow(QWidget *parent)
         auto files = QFileDialog::getOpenFileNames(this, QString(), QString(),  "Medias (*.mp4 *.mp3);");
         for (auto file : files)
         {
+            QList<QVariant> list = settings.value("items").toList();
+            list.push_front(file);
+            settings.setValue("items", list);
             this->insertVideoItem(file.toStdString());
         }
         });
@@ -62,13 +68,14 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow()
-{}
+{
+
+}
 
 void MainWindow::insertVideoItem(const std::string & url)
 {
     QFileInfo info(url.c_str());
     _nameToPath.insert(std::pair(info.fileName().toStdString(), url));
-
     ui.listView->model()->insertRow(0);
     ui.listView->model()->setData(ui.listView->model()->index(0, 0), info.fileName());
     spdlog::info("insert new video item, url: {}, filename: {}", url, info.fileName().toStdString());
