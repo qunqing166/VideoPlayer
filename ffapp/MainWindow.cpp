@@ -30,7 +30,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui.listView, &QListView::clicked, this, [=](const QModelIndex& index) {
         std::string name = ui.listView->model()->data(index).toString().toStdString();
-        controller->setSource(QString(_nameToPath[name].c_str()));
+        controller->setSource(_nameToPath[name], PlayController::MP4);
+        });
+
+    connect(ui.pushButton_6, &QPushButton::clicked, this, [=]() {
+        controller->setSource(ui.lineEdit->text().toStdString(), PlayController::NetStream);
         });
 
     connect(ui.pushButton_4, &QPushButton::clicked, this, [&]() {

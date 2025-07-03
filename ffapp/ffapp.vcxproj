@@ -37,7 +37,7 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>6.7.3_msvc2022_64</QtInstall>
-    <QtModules>core;gui;widgets;multimedia</QtModules>
+    <QtModules>core;gui;network;widgets;multimedia</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
@@ -66,7 +66,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;spdlogd.lib;SDL2d.lib;SDL2maind.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;spdlogd.lib;SDL2d.lib;SDL2maind.lib;PocoJSONd.lib;PocoNetd.lib;PocoFoundationd.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>E:\MyProject\C++\ffapp\ffapp\deps\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -100,8 +100,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioThread.cpp" />
+    <ClCompile Include="BiliUtils.cpp" />
+    <ClCompile Include="IOpenStream.cpp" />
     <ClCompile Include="MediaDecoder.cpp" />
-    <ClCompile Include="MP4Decoder.cpp" />
+    <ClCompile Include="MP4InputOpen.cpp" />
+    <ClCompile Include="NetStreamOpen.cpp" />
     <ClCompile Include="PlayController.cpp" />
     <ClCompile Include="PlayerWidget.cpp" />
     <ClCompile Include="ProgressBar.cpp" />
@@ -113,10 +116,13 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BiliUtils.h" />
     <QtMoc Include="ProgressBar.h" />
+    <ClInclude Include="IOpenStream.h" />
+    <ClInclude Include="MP4InputOpen.h" />
+    <ClInclude Include="NetStreamOpen.h" />
     <ClInclude Include="Semaphore.h" />
     <QtMoc Include="PlayerWidget.h" />
-    <ClInclude Include="MP4Decoder.h" />
     <QtMoc Include="PlayController.h" />
   </ItemGroup>
   <ItemGroup>

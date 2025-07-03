@@ -17,13 +17,16 @@ extern "C" {
 #include "RunningTime.h"
 #include "spdlog/spdlog.h"
 #include "SDL2/SDL.h"
+#include "MP4InputOpen.h"
+#include "NetStreamOpen.h"
 
 PlayController::PlayController(QObject* parent):
 	QObject(parent)
 {
     SDL_Init(SDL_INIT_AUDIO);
 
-    _decode.reset(new MP4Decoder());
+    //_decode.reset(new MP4Decoder());
+    _decode.reset(new MediaDecoder());
     _decode->start();
 
     _wantedSpec.format = AUDIO_F32SYS;
@@ -44,7 +47,6 @@ bool PlayController::setSource(const QString& url)
 {
     if (_sourceUrl != url)
     {
-        //setState(pause);
         _state = pause;
         this->_sourceUrl = url;
         _decode->setSource(_sourceUrl.toStdString());
@@ -67,6 +69,18 @@ bool PlayController::setSource(const QString& url)
         return true;
     }
     return false;
+}
+
+bool PlayController::setSource(const std::string& url, StreamType type)
+{
+    //_decode->setOpenStream(new MP4InputOpen());
+    switch (type)
+    {
+    case MP4:_decode->setOpenStream(new MP4InputOpen()); break;
+    case NetStream:_decode->setOpenStream(new NetStreamOpen()); break;
+    default:_decode->setOpenStream(new MP4InputOpen()); break;
+    }
+    return setSource(QString(url.c_str()));
 }
 
 void PlayController::seek(double position)

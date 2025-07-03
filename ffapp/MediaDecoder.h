@@ -14,28 +14,35 @@ extern "C" {
 #include <queue>
 #include <mutex>
 #include <memory>
+#include <Semaphore.h>
+#include "IOpenStream.h"
 
 class MediaDecoder
 {
 public:
+
 	MediaDecoder();
 	virtual ~MediaDecoder();
 
 	void start();
-	//void stop();
-
 	void setSource(const std::string& file);
-	virtual AVFrame* getNextVideoFrame() = 0;
-	virtual AVFrame* getNextAudioFrame() = 0;
 	QImage frameToImage(AVFrame* frame);
+
+	void setOpenStream(IOpenStream* stream);
+
+	virtual AVFrame* getNextVideoFrame();
+	virtual AVFrame* getNextAudioFrame();
+	virtual uint64_t getTimeStamp(uint64_t pts);
+	
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
-	virtual const AVCodecParameters* getVideoFormat() { return nullptr; }
-	virtual const AVCodecParameters* getAudioFormat() { return nullptr; }
-	virtual uint64_t getTimeStamp(uint64_t pts) { return -1; }
+	virtual const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
+	virtual const AVCodecParameters* getAudioFormat() { return _formatContext->streams[_audioStreamIndex]->codecpar; }
+	
 
-	virtual void seek(uint64_t ms) = 0;
-	virtual void printfMediaInfo() {};
+	virtual void seek(uint64_t ms);
+	virtual void printfMediaInfo();
 
+	void clearFrames();
 
 protected:
 
@@ -47,10 +54,11 @@ protected:
 	} 
 	_state = idle;
 
-	virtual void initSource() = 0;
-	virtual void releaseSource() = 0;
-	virtual void threadDecode() = 0;
+	virtual void initSource();
+	virtual void releaseSource();
+	virtual void threadDecode();
 	
+	IOpenStream* _openStream = nullptr;
 
 	std::string url;
 
@@ -79,5 +87,7 @@ protected:
 
 	std::unique_ptr<std::thread*> _threadDecode;
 
+	Semaphore _sem;
+	std::mutex _mtx;
 };
 

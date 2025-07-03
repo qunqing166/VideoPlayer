@@ -43,9 +43,6 @@
     <ClCompile Include="PlayerWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MP4Decoder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PlayController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -59,6 +56,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProgressBar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IOpenStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MP4InputOpen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NetStreamOpen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BiliUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,10 +92,19 @@
     <ClInclude Include="MediaDecoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MP4Decoder.h">
+    <ClInclude Include="Semaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Semaphore.h">
+    <ClInclude Include="IOpenStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MP4InputOpen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetStreamOpen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BiliUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

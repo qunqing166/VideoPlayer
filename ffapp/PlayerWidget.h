@@ -6,7 +6,6 @@
 #include <QAudioOutput>
 #include <QAudioFormat>
 #include <QAudioSink>
-#include "MP4Decoder.h"
 #include <QElapsedTimer>
 #include <QTime>
 #include "PlayController.h"
