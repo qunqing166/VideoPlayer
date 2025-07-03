@@ -7,17 +7,20 @@
 MediaDecoder::MediaDecoder():
     _sem(200)
 {
-    spdlog::info("threadDecode created");
 }
 
 MediaDecoder::~MediaDecoder() 
 {
-
+    _state = finished;
+    _threadDecode->join();
+    this->clearFrames();
+    avformat_close_input(&_formatContext);
 }
 
 void MediaDecoder::start()
 {
-    _threadDecode = std::make_unique<std::thread*>(new std::thread(&MediaDecoder::threadDecode, this));
+    _threadDecode.reset(new std::thread(&MediaDecoder::threadDecode, this));
+    spdlog::info("threadDecode created");
 }
 
 void MediaDecoder::setSource(const std::string& file)
@@ -26,7 +29,6 @@ void MediaDecoder::setSource(const std::string& file)
     {
         url = file;
         initSource();
-        //_threadDecode = std::make_unique<std::thread*>(new std::thread(&MediaDecoder::threadDecode, this));
         spdlog::info("MediaDecoder::setSource(const std::string& file): new url");
     }
     else
@@ -302,14 +304,13 @@ void MediaDecoder::threadDecode()
 
     AVPacket* packet = nullptr;
     AVFrame* frame = nullptr;
-    while (1)
+    while (_state != finished)
     {
         switch (_state)
         {
         case MediaDecoder::ready:
             break;
         case MediaDecoder::idle:;
-        case MediaDecoder::finished:;
         default:
             continue;
         }
@@ -318,7 +319,7 @@ void MediaDecoder::threadDecode()
         {
             av_packet_free(&packet);
             spdlog::info("av_read_frame(_formatContext, packet) over");
-            _state = finished;
+            _state = idle;
             continue;
         }
         const int maxSize = 50;

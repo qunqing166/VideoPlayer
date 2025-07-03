@@ -20,7 +20,8 @@ public:
 		idle,
 		running,
 		pause,
-		stop
+		stop,
+		finished
 	};
 
 	enum StreamType

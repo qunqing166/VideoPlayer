@@ -10,7 +10,7 @@ AVFormatContext* MP4InputOpen::openStream(const std::string& url)
     }
     else
     {
-        spdlog::info("mp4 stream open ok");
+        spdlog::info("open stream: {}", url);
     }
     return formatContext;
 }

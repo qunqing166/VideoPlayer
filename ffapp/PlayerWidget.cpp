@@ -20,7 +20,7 @@ PlayerWidget::PlayerWidget(PlayController* controller, QWidget* parent):
 
 PlayerWidget::~PlayerWidget()
 {
-
+    
 }
 
 void PlayerWidget::setController(PlayController* controller)

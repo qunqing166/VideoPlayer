@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui.setupUi(this);
 
-    PlayController* controller = new PlayController();
-    PlayerWidget* widget = new PlayerWidget(controller, this);
+    controller = std::make_unique<PlayController>(new PlayController());
+    PlayerWidget* widget = new PlayerWidget(controller.get(), this);
     ui.horizontalLayout_2->addWidget(widget);
 
     auto progressBar = new ProgressBar();
@@ -58,7 +58,7 @@ MainWindow::MainWindow(QWidget *parent)
         status = !status;
         });
     bool* isPts = new bool(false);
-    connect(controller, &PlayController::ptsChanged, this, [=](double position) {
+    connect(controller.get(), &PlayController::ptsChanged, this, [=](double position) {
         if (progressBar->IsDragged() == false)
         {
             progressBar->setValue(position * 10000 + 1);
@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-
+    
 }
 
 void MainWindow::insertVideoItem(const std::string & url)

@@ -40,7 +40,9 @@ PlayController::PlayController(QObject* parent):
 
 PlayController::~PlayController()
 {
-
+    _state = finished;
+    _threadVideo->join();
+    SDL_CloseAudio();
 }
 
 bool PlayController::setSource(const QString& url)
@@ -73,7 +75,6 @@ bool PlayController::setSource(const QString& url)
 
 bool PlayController::setSource(const std::string& url, StreamType type)
 {
-    //_decode->setOpenStream(new MP4InputOpen());
     switch (type)
     {
     case MP4:_decode->setOpenStream(new MP4InputOpen()); break;
@@ -159,7 +160,7 @@ void PlayController::SDLAudioCallback(void* arg, Uint8* stream, int len)
 
 void PlayController::threadVideo()
 {
-    for (;;)
+    while(_state != finished)
     {
         switch (_state)
         {

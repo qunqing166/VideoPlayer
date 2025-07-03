@@ -85,7 +85,7 @@ protected:
 	std::priority_queue<AVFrame*, std::vector<AVFrame*>, FrameComparator> _pqVideoFrames;
 	std::priority_queue<AVFrame*, std::vector<AVFrame*>, FrameComparator> _pqAudioFrames;
 
-	std::unique_ptr<std::thread*> _threadDecode;
+	std::unique_ptr<std::thread> _threadDecode;
 
 	Semaphore _sem;
 	std::mutex _mtx;

@@ -29,7 +29,7 @@ AVFormatContext* NetStreamOpen::openStream(const std::string& url)
     }
     else
     {
-        spdlog::info("input open ok");
+        spdlog::info("bili stream open ok");
     }
     return formatContext;
 }
