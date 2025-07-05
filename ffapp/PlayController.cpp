@@ -63,7 +63,6 @@ bool PlayController::setSource(const QString& url)
             spdlog::info("SDL_OpenAudio OK");
         }
         setState(running);
-        emit sourceChanged();
         return true;
     }
     return false;
@@ -190,7 +189,10 @@ void PlayController::threadVideo()
         }
         if (waitTime > 0) {
             QThread::usleep(waitTime * 1000);
-            emit nextVideoFrame(_decode->frameToImage(frame));
+
+            //_decode->frameToImage(frame);
+            _decode->fillFrameBuffer(frame);
+            emit nextVideoFrame();
         }
 
         av_frame_free(&frame);

@@ -37,7 +37,38 @@ void MediaDecoder::setSource(const std::string& file)
     }
 }
 
-QImage MediaDecoder::frameToImage(AVFrame* frame)
+//QImage MediaDecoder::frameToImage(AVFrame* frame)
+//{
+//    auto swsContext = sws_getContext(
+//        _codecVideo->width, _codecVideo->height,
+//        _codecVideo->pix_fmt,
+//        _codecVideo->width, _codecVideo->height,
+//        AV_PIX_FMT_RGB24,
+//        SWS_BILINEAR, nullptr, nullptr, nullptr);
+//    int tmp = _codecVideo->width * 3;
+//
+//    sws_scale(
+//        swsContext,
+//        (const uint8_t* const*)frame->data,
+//        frame->linesize,
+//        0,
+//        _codecVideo->height,
+//        &_buffer,
+//        &tmp
+//    );
+//
+//    // 这里用复制, 如果直接使用_buffer创建, 可能会崩溃
+//    // 直接使用_buffer创建的QImage是直接使用该缓冲区, 需要保证使用时该缓冲区没有被释放
+//    // 当切换视频时, 缓冲区会重新创建, 此时使用会导致程序崩溃
+//    //QImage image(_codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
+//    //memcpy(image.bits(), _buffer, _codecVideo->width * _codecVideo->height * 3);
+//    //return image;
+//
+//    //return QImage(_buffer, _codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
+//    return QImage();
+//}
+
+void MediaDecoder::fillFrameBuffer(AVFrame* frame)
 {
     auto swsContext = sws_getContext(
         _codecVideo->width, _codecVideo->height,
@@ -56,10 +87,6 @@ QImage MediaDecoder::frameToImage(AVFrame* frame)
         &_buffer,
         &tmp
     );
-    QImage image(_codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
-    memcpy(image.bits(), _buffer, _codecVideo->width * _codecVideo->height * 3);
-    //return QImage(_buffer, _codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
-    return image;
 }
 
 void MediaDecoder::setOpenStream(IOpenStream* stream) 
@@ -293,11 +320,13 @@ void MediaDecoder::initSource()
 
         if (_buffer != nullptr)delete[] _buffer;
         _buffer = new uchar[_codecVideo->width * _codecVideo->height * 3];
+        _updateImageBuffer((char*)_buffer, _codecVideo->width, _codecVideo->height);
     }
     else
     {
         if (_buffer != nullptr)delete[] _buffer;
         _buffer = nullptr;
+        _updateImageBuffer(nullptr, 0, 0);
     }
 
     this->printfMediaInfo();

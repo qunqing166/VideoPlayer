@@ -8,6 +8,7 @@
 #include <memory>
 #include "SDL2/SDL.h"
 #include "MediaDecoder.h"
+#include <functional>
 
 class PlayController: public QObject
 {
@@ -35,6 +36,7 @@ public:
 
 	bool setSource(const QString& url);
 	bool setSource(const std::string& url, StreamType type);
+	void setImageBuffer(std::function<void(char*, int, int)> func) { _decode->setImageBuffer(func); }
 
 	/**
 	 * @brief 将进度移动到指定位置
@@ -42,6 +44,7 @@ public:
 	 */
 	void seek(double position);
 	void setState(PlayController::State state);
+	const State getState() { return _state; }
 	const MediaDecoder* getDecode() { return _decode.get(); }
 
 private:
@@ -60,8 +63,7 @@ private:
 
 signals:
 	void started();
-	void nextVideoFrame(const QImage& image);
+	void nextVideoFrame();
 	void ptsChanged(double pts);
-	void sourceChanged();
 };
 

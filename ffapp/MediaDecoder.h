@@ -26,13 +26,14 @@ public:
 
 	void start();
 	void setSource(const std::string& file);
-	QImage frameToImage(AVFrame* frame);
+	void fillFrameBuffer(AVFrame* frame);
 
 	void setOpenStream(IOpenStream* stream);
 
 	AVFrame* getNextVideoFrame();
 	AVFrame* getNextAudioFrame();
 	uint64_t getTimeStamp(uint64_t pts);
+	void setImageBuffer(std::function<void(char*, int, int)> func) { _updateImageBuffer = func; }
 	
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
 	const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
@@ -70,6 +71,8 @@ protected:
 	AVCodecContext* _codecAudio = nullptr;
 
 	AVFormatContext* _formatContext = nullptr;
+
+	std::function<void(char*, int, int)> _updateImageBuffer;
 
 	uchar* _buffer = nullptr;
 

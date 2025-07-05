@@ -5,18 +5,13 @@
 #include "spdlog/spdlog.h"
 
 PlayerWidget::PlayerWidget(PlayController* controller, QWidget* parent):
-    _controller(controller), QWidget(parent)
+    QWidget(parent)
 {
-    controller->setParent(this);
+    this->setController(controller);
 
-    connect(controller, &PlayController::nextVideoFrame, this, [&](const QImage& img) {
-        m_currentFrame = img;
+    connect(controller, &PlayController::nextVideoFrame, this, [&]() {
         this->update();
         }, Qt::QueuedConnection);
-    connect(controller, &PlayController::sourceChanged, this, [&]() {
-        this->m_currentFrame = QImage();
-        update();
-        });
 }
 
 PlayerWidget::~PlayerWidget()
@@ -26,7 +21,12 @@ PlayerWidget::~PlayerWidget()
 
 void PlayerWidget::setController(PlayController* controller)
 {
-    this->_controller = controller;
+    _controller = controller;
+    _controller->setParent(this);
+    _controller->setImageBuffer([&](char* buffer, int width, int height) {
+        if (buffer == nullptr)this->m_currentFrame = QImage();
+        else m_currentFrame = QImage((uchar*)buffer, width, height, QImage::Format_RGB888);
+        });
 }
 
 void PlayerWidget::setTimeBase(double base)
@@ -40,7 +40,7 @@ void PlayerWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     painter.setRenderHints(QPainter::SmoothPixmapTransform | QPainter::Antialiasing, true);
-    if (!m_currentFrame.isNull()) {
+    if (!m_currentFrame.isNull() && _controller->getState() == PlayController::running) {
         QImage&& tmp = m_currentFrame.scaled(this->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
         painter.drawImage(rect().topLeft() + QPoint((this->width() - tmp.width()) / 2, (this->height() - tmp.height()) / 2), tmp);
     }
