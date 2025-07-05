@@ -1,4 +1,10 @@
 <RCC>
-    <qresource prefix="MainWindow">
+    <qresource prefix="/">
+        <file>resource/icon/-.png</file>
+        <file>resource/icon/+.png</file>
+        <file>resource/icon/playing.png</file>
+        <file>resource/icon/stopping.png</file>
+        <file>resource/icon/to_last.png</file>
+        <file>resource/icon/to_next.png</file>
     </qresource>
 </RCC>

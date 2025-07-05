@@ -22,7 +22,7 @@ class MediaDecoder
 public:
 
 	MediaDecoder();
-	virtual ~MediaDecoder();
+	~MediaDecoder();
 
 	void start();
 	void setSource(const std::string& file);
@@ -30,17 +30,17 @@ public:
 
 	void setOpenStream(IOpenStream* stream);
 
-	virtual AVFrame* getNextVideoFrame();
-	virtual AVFrame* getNextAudioFrame();
-	virtual uint64_t getTimeStamp(uint64_t pts);
+	AVFrame* getNextVideoFrame();
+	AVFrame* getNextAudioFrame();
+	uint64_t getTimeStamp(uint64_t pts);
 	
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
-	virtual const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
-	virtual const AVCodecParameters* getAudioFormat() { return _formatContext->streams[_audioStreamIndex]->codecpar; }
+	const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
+	const AVCodecParameters* getAudioFormat() { return _formatContext->streams[_audioStreamIndex]->codecpar; }
 	
 
-	virtual void seek(uint64_t ms);
-	virtual void printfMediaInfo();
+	void seek(uint64_t ms);
+	void printfMediaInfo();
 
 	void clearFrames();
 
@@ -54,9 +54,9 @@ protected:
 	} 
 	_state = idle;
 
-	virtual void initSource();
-	virtual void releaseSource();
-	virtual void threadDecode();
+	void initSource();
+	void releaseSource();
+	void threadDecode();
 	
 	IOpenStream* _openStream = nullptr;
 

@@ -41,12 +41,19 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_7">
            <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>视频网址</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QLineEdit" name="lineEdit"/>
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_6">
              <property name="text">
-              <string>PushButton</string>
+              <string>播放</string>
              </property>
             </widget>
            </item>
@@ -88,8 +95,24 @@
                <height>20</height>
               </size>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton#pushButton
+{
+background-color: rgb(45, 45, 45);
+image: url(:/resource/icon/to_next.png);
+border-radius: 10px;
+padding: 5px;
+}
+QPushButton#pushButton:hover
+{
+image: url(:/resource/icon/to_next.png);
+background-color: rgb(57, 57, 57);
+border-radius: 10px;
+padding: 5px;
+}</string>
+             </property>
              <property name="text">
-              <string>&gt;</string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -107,8 +130,24 @@
                <height>20</height>
               </size>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton#pushButton_2
+{
+image: url(:/resource/icon/-.png);
+background-color: rgb(45, 45, 45);
+border-radius: 10px;
+padding: 5px;
+}
+QPushButton#pushButton_2:hover
+{
+image: url(:/resource/icon/-.png);
+background-color: rgb(57, 57, 57);
+border-radius: 10px;
+padding: 5px;
+}</string>
+             </property>
              <property name="text">
-              <string>||</string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -126,8 +165,24 @@
                <height>20</height>
               </size>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton#pushButton_3
+{
+image: url(:/resource/icon/to_last.png);
+background-color: rgb(45, 45, 45);
+border-radius: 10px;
+padding: 5px;
+}
+QPushButton#pushButton_3:hover
+{
+image: url(:/resource/icon/to_last.png);
+background-color: rgb(57, 57, 57);
+border-radius: 10px;
+padding: 5px;
+}</string>
+             </property>
              <property name="text">
-              <string>&lt;</string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -154,6 +209,13 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>播放列表</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer">
              <property name="orientation">
               <enum>Qt::Orientation::Horizontal</enum>
@@ -176,18 +238,35 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton#pushButton_5
+{
+image: url(:/resource/icon/-.png);
+background-color: rgb(45, 45, 45);
+border-radius: 12px;
+padding: 5px;
+}
+QPushButton#pushButton_5:hover
+{
+image: url(:/resource/icon/-.png);
+background-color: rgb(57, 57, 57);
+border-radius: 12px;
+padding: 5px;
+}
+</string>
+             </property>
              <property name="text">
-              <string>-</string>
+              <string/>
              </property>
             </widget>
            </item>
@@ -201,18 +280,34 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>24</width>
+               <height>24</height>
               </size>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton#pushButton_4
+{
+image: url(:/resource/icon/+.png);
+background-color: rgb(45, 45, 45);
+border-radius: 12px;
+padding: 5px;
+}
+QPushButton#pushButton_4:hover
+{
+image: url(:/resource/icon/+.png);
+background-color: rgb(57, 57, 57);
+border-radius: 12px;
+padding: 5px;
+}</string>
+             </property>
              <property name="text">
-              <string>+</string>
+              <string/>
              </property>
             </widget>
            </item>

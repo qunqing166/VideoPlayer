@@ -35,15 +35,20 @@ public:
 
 	bool setSource(const QString& url);
 	bool setSource(const std::string& url, StreamType type);
+
+	/**
+	 * @brief 将进度移动到指定位置
+	 * @para position 范围0~1
+	 */
 	void seek(double position);
 	void setState(PlayController::State state);
-	MediaDecoder* getDecode() { return _decode.get(); }
+	const MediaDecoder* getDecode() { return _decode.get(); }
 
 private:
 
 	static void SDLAudioCallback(void* arg, Uint8* stream, int len);
-
 	void threadVideo();
+
 	std::unique_ptr<MediaDecoder> _decode;
 	State _state = idle;
 	QString _sourceUrl;
@@ -51,7 +56,6 @@ private:
 
 	SDL_AudioSpec _wantedSpec;
 	SDL_AudioSpec _obtainedSpec;
-
 	int _timeStamp = 0;
 
 signals:

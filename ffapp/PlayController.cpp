@@ -24,13 +24,10 @@ PlayController::PlayController(QObject* parent):
 	QObject(parent)
 {
     SDL_Init(SDL_INIT_AUDIO);
-
-    //_decode.reset(new MP4Decoder());
     _decode.reset(new MediaDecoder());
     _decode->start();
 
     _wantedSpec.format = AUDIO_F32SYS;
-    //_wantedSpec.channels = 2;
     _wantedSpec.samples = 1024;
     _wantedSpec.userdata = this;
     _wantedSpec.callback = PlayController::SDLAudioCallback;

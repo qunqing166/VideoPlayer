@@ -46,9 +46,6 @@
     <ClCompile Include="PlayController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AudioThread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MediaDecoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,9 +80,6 @@
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioThread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RunningTime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
