@@ -128,7 +128,20 @@ void PlayController::SDLAudioCallback(void* arg, Uint8* stream, int len)
                 remaining = 0;
             }
             AVFrame* frame = obj->_decode->getNextAudioFrame();
-            if (frame == nullptr)continue;
+            if (frame == nullptr)
+            {
+                if (obj->getDecode()->getState() == idle)
+                {
+                    static std::future<void> fu;
+                    fu = std::async(std::launch::async, [=]() {
+                        obj->_onMediaPlayFinished();
+                        spdlog::debug("async finished");
+                        });
+                    return;
+                    //obj->_onMediaPlayFinished();
+                }
+                continue;
+            }
             remaining = av_samples_get_buffer_size(
                 nullptr,
                 1,
@@ -182,15 +195,15 @@ void PlayController::threadVideo()
         if (frame->pts == INT64_MIN)waitTime = 1;
         else waitTime = frame->pts * 1000 / 16000 - _timeStamp;
 
-        if (waitTime > 1000)
+        if (waitTime > 500)
         {
             spdlog::warn("wait time is to long: {} ms", waitTime);
             waitTime = 1;
+            //av_frame_free(&frame);
+            //continue;
         }
         if (waitTime > 0) {
             QThread::usleep(waitTime * 1000);
-
-            //_decode->frameToImage(frame);
             _decode->fillFrameBuffer(frame);
             emit nextVideoFrame();
         }

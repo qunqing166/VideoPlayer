@@ -15,12 +15,24 @@ MainWindow::MainWindow(QWidget *parent)
     PlayerWidget* widget = new PlayerWidget(controller.get(), this);
     ui.horizontalLayout_2->addWidget(widget);
 
+    ui.pushButton_2->setIcon(QIcon(":/resource/icon/stopping.png"));
+    ui.pushButton_2->setIconSize(QSize(10, 10));
+
     auto progressBar = new ProgressBar();
     progressBar->setRange(10000);
 
     ui.widget->layout()->addWidget(progressBar);
 
     ui.listView->setModel(new QStringListModel());
+
+    controller->setOnMediaPlayFinished([=]() {
+        int index =  ui.listView->currentIndex().row();
+        int size = ui.listView->model()->rowCount();
+        index = (index + 1) % size;
+        ui.listView->setCurrentIndex(ui.listView->model()->index(index, 0));
+        std::string name = ui.listView->model()->data(ui.listView->currentIndex()).toString().toStdString();
+        controller->setSource(_nameToPath[name], PlayController::MP4);
+        });
 
     QList<QVariant> list = settings.value("items").toList();
     for (auto item : list)
@@ -31,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui.listView, &QListView::clicked, this, [=](const QModelIndex& index) {
         std::string name = ui.listView->model()->data(index).toString().toStdString();
         controller->setSource(_nameToPath[name], PlayController::MP4);
+        playState = true;
+        ui.pushButton_2->setIcon(QIcon(":/resource/icon/playing.png"));
         });
 
     connect(ui.pushButton_6, &QPushButton::clicked, this, [=]() {
@@ -50,12 +64,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     
     connect(ui.pushButton_2, &QPushButton::clicked, this, [=]() {
-        static bool status = false;
-        if (status)
-            controller->setState(PlayController::running);
-        else
+        if (controller->getState() == PlayController::idle)return;
+        if (playState)
+        {
+            ui.pushButton_2->setIcon(QIcon(":/resource/icon/stopping.png"));
             controller->setState(PlayController::pause);
-        status = !status;
+        }
+        else
+        {
+            ui.pushButton_2->setIcon(QIcon(":/resource/icon/playing.png"));
+            controller->setState(PlayController::running);
+        }
+        playState = !playState;
+        this->update();
         });
     bool* isPts = new bool(false);
     connect(controller.get(), &PlayController::ptsChanged, this, [=](double position) {
@@ -67,6 +88,22 @@ MainWindow::MainWindow(QWidget *parent)
     connect(progressBar, &ProgressBar::ValueChanged, this, [=](int value) {
         spdlog::info("progress bar value: {}", value);
         controller->seek(value * 1.0 / 10000);
+        });
+    connect(ui.pushButton_3, &QPushButton::clicked, this, [&]() {
+        int index = ui.listView->currentIndex().row();
+        int size = ui.listView->model()->rowCount();
+        index = (index + size - 1) % size;
+        ui.listView->setCurrentIndex(ui.listView->model()->index(index, 0));
+        std::string name = ui.listView->model()->data(ui.listView->currentIndex()).toString().toStdString();
+        controller->setSource(_nameToPath[name], PlayController::MP4);
+        });
+    connect(ui.pushButton, &QPushButton::clicked, this, [&]() {
+        int index = ui.listView->currentIndex().row();
+        int size = ui.listView->model()->rowCount();
+        index = (index + 1) % size;
+        ui.listView->setCurrentIndex(ui.listView->model()->index(index, 0));
+        std::string name = ui.listView->model()->data(ui.listView->currentIndex()).toString().toStdString();
+        controller->setSource(_nameToPath[name], PlayController::MP4);
         });
 }
 

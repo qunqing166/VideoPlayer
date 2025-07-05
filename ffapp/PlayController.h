@@ -36,7 +36,7 @@ public:
 
 	bool setSource(const QString& url);
 	bool setSource(const std::string& url, StreamType type);
-	void setImageBuffer(std::function<void(char*, int, int)> func) { _decode->setImageBuffer(func); }
+	
 
 	/**
 	 * @brief 将进度移动到指定位置
@@ -47,10 +47,15 @@ public:
 	const State getState() { return _state; }
 	const MediaDecoder* getDecode() { return _decode.get(); }
 
+	void setOnImageBufferChanged(std::function<void(char*, int, int)> func) { _decode->setOnImageBufferChanged(func); }
+	void setOnMediaPlayFinished(std::function<void(void)> func) { _onMediaPlayFinished = func; }
+
 private:
 
 	static void SDLAudioCallback(void* arg, Uint8* stream, int len);
 	void threadVideo();
+
+	std::function<void(void)> _onMediaPlayFinished;
 
 	std::unique_ptr<MediaDecoder> _decode;
 	State _state = idle;

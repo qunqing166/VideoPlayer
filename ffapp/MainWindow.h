@@ -23,5 +23,7 @@ private:
     std::unique_ptr<PlayController> controller;
     std::map<std::string, std::string> _nameToPath;
     QSettings settings;
+
+    bool playState = false;
 };
 

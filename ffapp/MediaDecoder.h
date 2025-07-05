@@ -21,6 +21,14 @@ class MediaDecoder
 {
 public:
 
+	enum State {
+		idle,
+		wait,
+		wait_next,
+		ready,
+		finished
+	};
+
 	MediaDecoder();
 	~MediaDecoder();
 
@@ -33,7 +41,6 @@ public:
 	AVFrame* getNextVideoFrame();
 	AVFrame* getNextAudioFrame();
 	uint64_t getTimeStamp(uint64_t pts);
-	void setImageBuffer(std::function<void(char*, int, int)> func) { _updateImageBuffer = func; }
 	
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
 	const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
@@ -45,19 +52,14 @@ public:
 
 	void clearFrames();
 
+	void setOnImageBufferChanged(std::function<void(char*, int, int)> func) { _onImageBufferChanged = func; }
+	State getState() const { return _state.load(); }
+
 protected:
-
-	enum State {
-		idle,
-		wait,
-		ready,
-		finished
-	};
-	//_state = idle;
-
 	std::atomic<State> _state;
 
 	void setState(State state);
+	
 
 	void initSource();
 	void releaseSource();
@@ -72,7 +74,7 @@ protected:
 
 	AVFormatContext* _formatContext = nullptr;
 
-	std::function<void(char*, int, int)> _updateImageBuffer;
+	std::function<void(char*, int, int)> _onImageBufferChanged;
 
 	uchar* _buffer = nullptr;
 

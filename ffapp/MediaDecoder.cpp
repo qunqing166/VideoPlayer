@@ -225,7 +225,7 @@ void MediaDecoder::initSource()
     
     setState(wait);
 
-    while (_state != idle);
+    while (_state.load() != idle);
 
     this->clearFrames();
     avformat_close_input(&_formatContext);
@@ -320,13 +320,13 @@ void MediaDecoder::initSource()
 
         if (_buffer != nullptr)delete[] _buffer;
         _buffer = new uchar[_codecVideo->width * _codecVideo->height * 3];
-        _updateImageBuffer((char*)_buffer, _codecVideo->width, _codecVideo->height);
+        _onImageBufferChanged((char*)_buffer, _codecVideo->width, _codecVideo->height);
     }
     else
     {
         if (_buffer != nullptr)delete[] _buffer;
         _buffer = nullptr;
-        _updateImageBuffer(nullptr, 0, 0);
+        _onImageBufferChanged(nullptr, 0, 0);
     }
 
     this->printfMediaInfo();
@@ -362,7 +362,7 @@ void MediaDecoder::threadDecode()
     AVFrame* frame = nullptr;
     while (_state != finished)
     {
-        switch (_state)
+        switch (_state.load())
         {
         case MediaDecoder::ready:
             break;
@@ -370,6 +370,8 @@ void MediaDecoder::threadDecode()
             continue;
         case MediaDecoder::wait:
             setState(idle);
+            continue;
+        case MediaDecoder::wait_next:
             continue;
         default:
             continue;
@@ -379,7 +381,10 @@ void MediaDecoder::threadDecode()
         {
             av_packet_free(&packet);
             spdlog::info("av_read_frame(_formatContext, packet) over");
-            _state = idle;
+            setState(idle);
+            //std::async(std::launch::async, [&] {
+            //    _onVideoPlayFinished();
+            //    });
             continue;
         }
         const int maxSize = 50;
