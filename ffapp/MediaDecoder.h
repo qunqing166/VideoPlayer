@@ -51,8 +51,12 @@ protected:
 		wait,
 		ready,
 		finished
-	} 
-	_state = idle;
+	};
+	//_state = idle;
+
+	std::atomic<State> _state;
+
+	void setState(State state);
 
 	void initSource();
 	void releaseSource();
@@ -86,8 +90,8 @@ protected:
 	std::priority_queue<AVFrame*, std::vector<AVFrame*>, FrameComparator> _pqAudioFrames;
 
 	std::unique_ptr<std::thread> _threadDecode;
-
+	//std::mutex _mtx;
 	Semaphore _sem;
-	std::mutex _mtx;
+	bool isVideoThreadWaitting = false;
 };
 

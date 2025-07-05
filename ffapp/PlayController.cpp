@@ -44,6 +44,7 @@ PlayController::~PlayController()
 
 bool PlayController::setSource(const QString& url)
 {
+    setState(stop);
     if (_sourceUrl != url)
     {
         _state = pause;
@@ -53,7 +54,6 @@ bool PlayController::setSource(const QString& url)
         _wantedSpec.channels = audioInfo->ch_layout.nb_channels;
         _wantedSpec.freq = audioInfo->sample_rate / audioInfo->ch_layout.nb_channels;
 
-        SDL_CloseAudio();
         if (SDL_OpenAudio(&_wantedSpec, &_obtainedSpec) < 0)
         {
             spdlog::error("SDL_OpenAudio(&_wantedSpec, &_obtainedSpec)");
@@ -62,7 +62,6 @@ bool PlayController::setSource(const QString& url)
         {
             spdlog::info("SDL_OpenAudio OK");
         }
-        SDL_PauseAudio(0);
         setState(running);
         emit sourceChanged();
         return true;
@@ -72,6 +71,7 @@ bool PlayController::setSource(const QString& url)
 
 bool PlayController::setSource(const std::string& url, StreamType type)
 {
+    setState(stop);
     switch (type)
     {
     case MP4:_decode->setOpenStream(new MP4InputOpen()); break;
@@ -83,8 +83,10 @@ bool PlayController::setSource(const std::string& url, StreamType type)
 
 void PlayController::seek(double position)
 {
+    setState(pause);
     uint64_t sc = _decode->getFormatContext()->duration * position / 1000;
     _decode->seek(sc);
+    setState(running);
 }
 
 void PlayController::setState(PlayController::State state)
@@ -101,6 +103,7 @@ void PlayController::setState(PlayController::State state)
         SDL_PauseAudio(1);
         break;
     case PlayController::stop:
+        SDL_CloseAudio();
         break;
     default:
         break;
@@ -183,7 +186,7 @@ void PlayController::threadVideo()
         if (waitTime > 1000)
         {
             spdlog::warn("wait time is to long: {} ms", waitTime);
-            waitTime = 100;
+            waitTime = 1;
         }
         if (waitTime > 0) {
             QThread::usleep(waitTime * 1000);

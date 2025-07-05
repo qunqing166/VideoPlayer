@@ -56,7 +56,10 @@ QImage MediaDecoder::frameToImage(AVFrame* frame)
         &_buffer,
         &tmp
     );
-    return QImage(_buffer, _codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
+    QImage image(_codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
+    memcpy(image.bits(), _buffer, _codecVideo->width * _codecVideo->height * 3);
+    //return QImage(_buffer, _codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
+    return image;
 }
 
 void MediaDecoder::setOpenStream(IOpenStream* stream) 
@@ -167,15 +170,39 @@ void MediaDecoder::clearFrames()
             _sem.signal();
         }
     }
+    spdlog::debug("MediaDecoder::clearFrames()");
+}
+
+void MediaDecoder::setState(State state)
+{
+    _state.store(state);
+    switch (_state)
+    {
+    case MediaDecoder::idle:
+        break;
+    case MediaDecoder::wait:
+        break;
+    case MediaDecoder::ready:
+        isVideoThreadWaitting = false;
+        break;
+    case MediaDecoder::finished:
+        break;
+    default:
+        break;
+    }
 }
 
 void MediaDecoder::initSource()
 {
     RunningTime("Decoder init source");
+    
+    setState(wait);
 
-    _state = wait;
+    while (_state != idle);
+
     this->clearFrames();
     avformat_close_input(&_formatContext);
+
 
     _videoStreamIndex = -1;
     _audioStreamIndex = -1;
@@ -276,7 +303,7 @@ void MediaDecoder::initSource()
     this->printfMediaInfo();
 
 
-    _state = State::ready;
+    setState(ready);
 }
 
 void MediaDecoder::releaseSource()
@@ -310,7 +337,11 @@ void MediaDecoder::threadDecode()
         {
         case MediaDecoder::ready:
             break;
-        case MediaDecoder::idle:;
+        case MediaDecoder::idle:
+            continue;
+        case MediaDecoder::wait:
+            setState(idle);
+            continue;
         default:
             continue;
         }

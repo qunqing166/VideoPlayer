@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QThread>
 #include <QPushButton>
+#include "spdlog/spdlog.h"
 
 PlayerWidget::PlayerWidget(PlayController* controller, QWidget* parent):
     _controller(controller), QWidget(parent)
