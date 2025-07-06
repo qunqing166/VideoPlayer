@@ -21,18 +21,17 @@ extern "C" {
 #include "NetStreamOpen.h"
 
 PlayController::PlayController(QObject* parent):
-	QObject(parent)
+	QObject(parent), _sem(200), _videoQeueu(_sem), _audioQueue(_sem)
 {
     SDL_Init(SDL_INIT_AUDIO);
-    _decode.reset(new MediaDecoder());
-    _decode->start();
+    _decode.reset(new MediaDecoder(_audioQueue, _videoQeueu));
 
     _wantedSpec.format = AUDIO_F32SYS;
     _wantedSpec.samples = 1024;
     _wantedSpec.userdata = this;
     _wantedSpec.callback = PlayController::SDLAudioCallback;
 
-    _threadVideo.reset(new std::thread(&PlayController::threadVideo, this));
+    _threadVideo = std::make_unique<std::thread>(&PlayController::threadVideo, this);
 }
 
 PlayController::~PlayController()
@@ -54,7 +53,7 @@ bool PlayController::setSource(const QString& url)
         _wantedSpec.channels = audioInfo->ch_layout.nb_channels;
         _wantedSpec.freq = audioInfo->sample_rate / audioInfo->ch_layout.nb_channels;
 
-        if (SDL_OpenAudio(&_wantedSpec, &_obtainedSpec) < 0)
+        if (SDL_OpenAudio(&_wantedSpec, nullptr) < 0)
         {
             spdlog::error("SDL_OpenAudio(&_wantedSpec, &_obtainedSpec)");
         }
@@ -127,7 +126,7 @@ void PlayController::SDLAudioCallback(void* arg, Uint8* stream, int len)
                 len -= remaining;
                 remaining = 0;
             }
-            AVFrame* frame = obj->_decode->getNextAudioFrame();
+            AVFrame* frame = obj->_audioQueue.front();
             if (frame == nullptr)
             {
                 if (obj->getDecode()->getState() == idle)
@@ -138,7 +137,6 @@ void PlayController::SDLAudioCallback(void* arg, Uint8* stream, int len)
                         spdlog::debug("async finished");
                         });
                     return;
-                    //obj->_onMediaPlayFinished();
                 }
                 continue;
             }
@@ -188,7 +186,7 @@ void PlayController::threadVideo()
             continue;
         }
 
-        AVFrame* frame = _decode->getNextVideoFrame();
+        AVFrame* frame = _videoQeueu.front();
         if (frame == nullptr)continue;
 
         int64_t waitTime;

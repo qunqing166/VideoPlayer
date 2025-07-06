@@ -99,6 +99,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AVFrameQueue.cpp" />
     <ClCompile Include="BiliUtils.cpp" />
     <ClCompile Include="IOpenStream.cpp" />
     <ClCompile Include="MediaDecoder.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AVFrameQueue.h" />
     <ClInclude Include="BiliUtils.h" />
     <QtMoc Include="ProgressBar.h" />
     <ClInclude Include="IOpenStream.h" />

@@ -11,7 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui.setupUi(this);
 
-    controller = std::make_unique<PlayController>(new PlayController());
+    controller = std::make_unique<PlayController>();
+    //controller = new PlayController();
     PlayerWidget* widget = new PlayerWidget(controller.get(), this);
     ui.horizontalLayout_2->addWidget(widget);
 
@@ -24,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui.widget->layout()->addWidget(progressBar);
 
     ui.listView->setModel(new QStringListModel());
+
+
 
     controller->setOnMediaPlayFinished([=]() {
         int index =  ui.listView->currentIndex().row();
@@ -42,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui.listView, &QListView::clicked, this, [=](const QModelIndex& index) {
         std::string name = ui.listView->model()->data(index).toString().toStdString();
+        //std::async
         controller->setSource(_nameToPath[name], PlayController::MP4);
         playState = true;
         ui.pushButton_2->setIcon(QIcon(":/resource/icon/playing.png"));

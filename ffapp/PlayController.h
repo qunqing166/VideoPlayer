@@ -9,6 +9,7 @@
 #include "SDL2/SDL.h"
 #include "MediaDecoder.h"
 #include <functional>
+#include "AVFrameQueue.h"
 
 class PlayController: public QObject
 {
@@ -57,14 +58,18 @@ private:
 
 	std::function<void(void)> _onMediaPlayFinished;
 
-	std::unique_ptr<MediaDecoder> _decode;
+	
 	State _state = idle;
 	QString _sourceUrl;
 	std::unique_ptr<std::thread> _threadVideo;
 
 	SDL_AudioSpec _wantedSpec;
-	SDL_AudioSpec _obtainedSpec;
 	int _timeStamp = 0;
+
+	Semaphore _sem;
+	AVFrameQueue _videoQeueu;
+	AVFrameQueue _audioQueue;
+	std::unique_ptr<MediaDecoder> _decode;
 
 signals:
 	void started();

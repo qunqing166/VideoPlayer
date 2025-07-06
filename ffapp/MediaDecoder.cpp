@@ -4,9 +4,11 @@
 #include <RunningTime.h>
 #include <qthread.h>
 
-MediaDecoder::MediaDecoder():
-    _sem(200)
+MediaDecoder::MediaDecoder(AVFrameQueue& audio, AVFrameQueue& video):
+    _audioQueue(audio), _videoQueue(video)
 {
+    _threadDecode = std::make_unique<std::thread>(&MediaDecoder::threadDecode, this);
+    spdlog::info("threadDecode created");
 }
 
 MediaDecoder::~MediaDecoder() 
@@ -15,12 +17,6 @@ MediaDecoder::~MediaDecoder()
     _threadDecode->join();
     this->clearFrames();
     avformat_close_input(&_formatContext);
-}
-
-void MediaDecoder::start()
-{
-    _threadDecode.reset(new std::thread(&MediaDecoder::threadDecode, this));
-    spdlog::info("threadDecode created");
 }
 
 void MediaDecoder::setSource(const std::string& file)
@@ -36,37 +32,6 @@ void MediaDecoder::setSource(const std::string& file)
         spdlog::info("MediaDecoder::setSource(const std::string& file): url == file");
     }
 }
-
-//QImage MediaDecoder::frameToImage(AVFrame* frame)
-//{
-//    auto swsContext = sws_getContext(
-//        _codecVideo->width, _codecVideo->height,
-//        _codecVideo->pix_fmt,
-//        _codecVideo->width, _codecVideo->height,
-//        AV_PIX_FMT_RGB24,
-//        SWS_BILINEAR, nullptr, nullptr, nullptr);
-//    int tmp = _codecVideo->width * 3;
-//
-//    sws_scale(
-//        swsContext,
-//        (const uint8_t* const*)frame->data,
-//        frame->linesize,
-//        0,
-//        _codecVideo->height,
-//        &_buffer,
-//        &tmp
-//    );
-//
-//    // 这里用复制, 如果直接使用_buffer创建, 可能会崩溃
-//    // 直接使用_buffer创建的QImage是直接使用该缓冲区, 需要保证使用时该缓冲区没有被释放
-//    // 当切换视频时, 缓冲区会重新创建, 此时使用会导致程序崩溃
-//    //QImage image(_codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
-//    //memcpy(image.bits(), _buffer, _codecVideo->width * _codecVideo->height * 3);
-//    //return image;
-//
-//    //return QImage(_buffer, _codecVideo->width, _codecVideo->height, QImage::Format_RGB888);
-//    return QImage();
-//}
 
 void MediaDecoder::fillFrameBuffer(AVFrame* frame)
 {
@@ -95,32 +60,6 @@ void MediaDecoder::setOpenStream(IOpenStream* stream)
     _openStream = stream; 
 }
 
-AVFrame* MediaDecoder::getNextVideoFrame()
-{
-    std::lock_guard<std::mutex> lock(_mtxVideo);
-    if (_pqVideoFrames.empty())
-    {
-        return nullptr;
-    }
-    auto tmp = _pqVideoFrames.top();
-    _pqVideoFrames.pop();
-    _sem.signal();
-    return tmp;
-}
-
-AVFrame* MediaDecoder::getNextAudioFrame()
-{
-    std::lock_guard<std::mutex> lock(_mtxAudio);
-    if (_pqAudioFrames.empty())
-    {
-        return nullptr;
-    }
-    auto tmp = _pqAudioFrames.top();
-    _pqAudioFrames.pop();
-    _sem.signal();
-    return tmp;
-}
-
 uint64_t MediaDecoder::getTimeStamp(uint64_t pts)
 {
     return pts * 1000 / _formatContext->streams[_audioStreamIndex]->time_base.den;
@@ -128,12 +67,14 @@ uint64_t MediaDecoder::getTimeStamp(uint64_t pts)
 
 void MediaDecoder::seek(uint64_t ms)
 {
-    _state = wait;
+    //_state = wait;
+    setState(wait_seek);
     uint64_t ts = ms * _formatContext->streams[_audioStreamIndex]->time_base.den / 1000;
     spdlog::info("ts: {}", ts);
     av_seek_frame(_formatContext, _audioStreamIndex, ts, AVSEEK_FLAG_BACKWARD);
     this->clearFrames();
-    _state = ready;
+    //_state = ready;
+    setState(ready);
 }
 
 void MediaDecoder::printfMediaInfo()
@@ -177,59 +118,37 @@ void MediaDecoder::printfMediaInfo()
 
 void MediaDecoder::clearFrames()
 {
-    {
-        std::lock_guard<std::mutex> lock(_mtxAudio);
-        while (!_pqAudioFrames.empty())
-        {
-            auto f = _pqAudioFrames.top();
-            av_frame_free(&f);
-            _pqAudioFrames.pop();
-            _sem.signal();
-        }
-    }
-    {
-        std::lock_guard<std::mutex> lock(_mtxVideo);
-        while (!_pqVideoFrames.empty())
-        {
-            auto f = _pqVideoFrames.top();
-            av_frame_free(&f);
-            _pqVideoFrames.pop();
-            _sem.signal();
-        }
-    }
+    _videoQueue.realseAll();
+    _audioQueue.realseAll();
     spdlog::debug("MediaDecoder::clearFrames()");
 }
 
 void MediaDecoder::setState(State state)
 {
     _state.store(state);
-    switch (_state)
-    {
-    case MediaDecoder::idle:
-        break;
-    case MediaDecoder::wait:
-        break;
-    case MediaDecoder::ready:
-        isVideoThreadWaitting = false;
-        break;
-    case MediaDecoder::finished:
-        break;
-    default:
-        break;
-    }
+    //switch (_state.load())
+    //{
+    //case MediaDecoder::idle:
+    //    break;
+    //case MediaDecoder::wait:
+    //    break;
+    //case MediaDecoder::ready:
+    //    break;
+    //case MediaDecoder::finished:
+    //    break;
+    //default:
+    //    break;
+    //}
 }
 
 void MediaDecoder::initSource()
 {
-    RunningTime("Decoder init source");
-    
-    setState(wait);
-
-    while (_state.load() != idle);
+    RunningTime rt("Decoder init source");
 
     this->clearFrames();
+    setState(wait);
+    while (_state.load() != idle);
     avformat_close_input(&_formatContext);
-
 
     _videoStreamIndex = -1;
     _audioStreamIndex = -1;
@@ -360,7 +279,7 @@ void MediaDecoder::threadDecode()
 
     AVPacket* packet = nullptr;
     AVFrame* frame = nullptr;
-    while (_state != finished)
+    while (_state.load() != finished)
     {
         switch (_state.load())
         {
@@ -369,6 +288,7 @@ void MediaDecoder::threadDecode()
         case MediaDecoder::idle:
             continue;
         case MediaDecoder::wait:
+            spdlog::debug("wait to idle");
             setState(idle);
             continue;
         case MediaDecoder::wait_next:
@@ -382,16 +302,9 @@ void MediaDecoder::threadDecode()
             av_packet_free(&packet);
             spdlog::info("av_read_frame(_formatContext, packet) over");
             setState(idle);
-            //std::async(std::launch::async, [&] {
-            //    _onVideoPlayFinished();
-            //    });
             continue;
         }
         const int maxSize = 50;
-        if (_pqVideoFrames.size() > maxSize || _pqAudioFrames.size() > maxSize)
-        {
-            QThread::msleep(100);
-        }
 
         if (packet->stream_index == _videoStreamIndex)
         {
@@ -401,9 +314,7 @@ void MediaDecoder::threadDecode()
                 {
                     frame = av_frame_alloc();
                     if (avcodec_receive_frame(_codecVideo, frame) != 0)break;
-                    _sem.wait();
-                    std::lock_guard<std::mutex> lock(_mtxVideo);
-                    _pqVideoFrames.push(frame);
+                    _videoQueue.push(frame);
                 }
                 av_frame_free(&frame);
             }
@@ -416,9 +327,7 @@ void MediaDecoder::threadDecode()
                 {
                     frame = av_frame_alloc();
                     if (avcodec_receive_frame(_codecAudio, frame) != 0)break;
-                    _sem.wait();
-                    std::lock_guard<std::mutex> lock(_mtxAudio);
-                    _pqAudioFrames.push(frame);
+                    _audioQueue.push(frame);
                 }
                 av_frame_free(&frame);
             }

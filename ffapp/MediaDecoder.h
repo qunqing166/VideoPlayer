@@ -16,6 +16,7 @@ extern "C" {
 #include <memory>
 #include <Semaphore.h>
 #include "IOpenStream.h"
+#include "AVFrameQueue.h"
 
 class MediaDecoder
 {
@@ -24,23 +25,23 @@ public:
 	enum State {
 		idle,
 		wait,
+		wait_seek,
 		wait_next,
 		ready,
 		finished
 	};
 
-	MediaDecoder();
+	MediaDecoder(AVFrameQueue& audio, AVFrameQueue& video);
 	~MediaDecoder();
-
-	void start();
 	void setSource(const std::string& file);
 	void fillFrameBuffer(AVFrame* frame);
 
 	void setOpenStream(IOpenStream* stream);
 
-	AVFrame* getNextVideoFrame();
-	AVFrame* getNextAudioFrame();
 	uint64_t getTimeStamp(uint64_t pts);
+
+	//int64_t getVideoTimeBase();
+	//int64_t getAudioTimeBase();
 	
 	const AVFormatContext* getFormatContext() const { return _formatContext; }
 	const AVCodecParameters* getVideoFormat() { return _formatContext->streams[_videoStreamIndex]->codecpar; }
@@ -56,22 +57,20 @@ public:
 	State getState() const { return _state.load(); }
 
 protected:
-	std::atomic<State> _state;
 
 	void setState(State state);
-	
 
 	void initSource();
 	void releaseSource();
 	void threadDecode();
-	
-	IOpenStream* _openStream = nullptr;
 
 	std::string url;
+	std::atomic<State> _state;
+
+	IOpenStream* _openStream = nullptr;
 
 	AVCodecContext* _codecVideo = nullptr;
 	AVCodecContext* _codecAudio = nullptr;
-
 	AVFormatContext* _formatContext = nullptr;
 
 	std::function<void(char*, int, int)> _onImageBufferChanged;
@@ -80,23 +79,13 @@ protected:
 
 	int _videoStreamIndex = -1;
 	int _audioStreamIndex = -1;
-	std::mutex _mtxAudio;
-	std::mutex _mtxVideo;
 
-	class FrameComparator
-	{
-	public:
-		bool operator()(const AVFrame* a, const AVFrame* b) {
-			return a->pts > b->pts;
-		}
-	};
-
-	std::priority_queue<AVFrame*, std::vector<AVFrame*>, FrameComparator> _pqVideoFrames;
-	std::priority_queue<AVFrame*, std::vector<AVFrame*>, FrameComparator> _pqAudioFrames;
+	AVFrameQueue& _videoQueue;
+	AVFrameQueue& _audioQueue;
 
 	std::unique_ptr<std::thread> _threadDecode;
-	//std::mutex _mtx;
-	Semaphore _sem;
-	bool isVideoThreadWaitting = false;
+
+	//double _videoTimeBase;
+	//double _audioTimeBase;
 };
 
