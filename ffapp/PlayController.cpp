@@ -193,12 +193,10 @@ void PlayController::threadVideo()
         if (frame->pts == INT64_MIN)waitTime = 1;
         else waitTime = frame->pts * 1000 / 16000 - _timeStamp;
 
-        if (waitTime > 500)
+        if (waitTime > 100)
         {
             spdlog::warn("wait time is to long: {} ms", waitTime);
-            waitTime = 1;
-            //av_frame_free(&frame);
-            //continue;
+            waitTime = 30;
         }
         if (waitTime > 0) {
             QThread::usleep(waitTime * 1000);
